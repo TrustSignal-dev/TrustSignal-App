@@ -143,6 +143,13 @@ npm run test
 npm run build
 ```
 
+## GitHub Actions
+
+The repository includes two baseline GitHub Actions workflows:
+
+- `CI`: runs `npm run validate` on pull requests and pushes to `main` across Node.js 20 and 22
+- `Action Bundle Check`: rebuilds `apps/action/dist/index.js` and fails if the committed bundle is out of date
+
 ## GitHub Action Runtime
 
 The GitHub Action entry point lives in `apps/action/src/main.ts`. It reads GitHub Actions environment variables and the event payload from `GITHUB_EVENT_PATH`, normalizes that payload into the same TrustSignal verification request used by the GitHub App, and submits it with the same API client.
