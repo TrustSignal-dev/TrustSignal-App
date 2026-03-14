@@ -112,8 +112,16 @@ export function normalizePushPayload(payload: Record<string, any>): GitHubVerifi
 export function normalizeCheckSuitePayload(payload: Record<string, any>): GitHubVerificationEnvelope | null {
   const checkSuite = payload.check_suite;
   const repository = payload.repository;
+  const headSha =
+    typeof checkSuite?.head_sha === "string" && checkSuite.head_sha.length > 0
+      ? checkSuite.head_sha
+      : typeof payload.after === "string" && payload.after.length > 0
+      ? payload.after
+      : typeof payload.head_sha === "string" && payload.head_sha.length > 0
+      ? payload.head_sha
+      : undefined;
 
-  if (!checkSuite || !repository || typeof checkSuite.head_sha !== "string" || !checkSuite.head_sha) {
+  if (!checkSuite || !repository || !headSha) {
     return null;
   }
 
@@ -130,7 +138,7 @@ export function normalizeCheckSuitePayload(payload: Record<string, any>): GitHub
       defaultBranch: repository.default_branch,
       htmlUrl: repository.html_url,
     },
-    headSha: checkSuite.head_sha,
+    headSha,
     externalId: `check_suite:${checkSuite.id}`,
     summaryContext: `check suite ${checkSuite.id}`,
     detailsUrl: checkSuite.url,

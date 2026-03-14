@@ -161,4 +161,68 @@ describe("handleGitHubWebhook", () => {
       })
     );
   });
+
+  it("processes requested check_suite events using after as fallback", async () => {
+    const githubClient = {
+      createCheckRun: vi
+        .fn()
+        .mockResolvedValueOnce({ id: 91, html_url: "https://github.com/acme/repo/runs/91", status: "in_progress" }),
+      updateCheckRun: vi
+        .fn()
+        .mockResolvedValueOnce({ id: 91, html_url: "https://github.com/acme/repo/runs/91", status: "completed", conclusion: "success" }),
+    } as any;
+    const verificationService = {
+      verify: vi.fn().mockResolvedValue({
+        status: "completed",
+        conclusion: "success",
+        title: "Artifact verification completed",
+        summary: "Verification succeeded",
+        detailsUrl: "https://trustsignal.example.com/receipts/rcpt_3",
+        receiptId: "rcpt_3",
+        verificationTimestamp: "2026-03-14T00:00:00.000Z",
+        provenanceNote: "check_suite event check_suite:654",
+      }),
+    };
+    const logger = {
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    } as any;
+
+    const result = await handleGitHubWebhook({
+      parsed: {
+        deliveryId: "delivery-3",
+        event: "check_suite",
+        action: "requested",
+        installationId: 11,
+      },
+      payload: {
+        action: "requested",
+        after: "def9999",
+        check_suite: {
+          id: 654,
+          status: "queued",
+          conclusion: null,
+          head_branch: "main",
+          app: {
+            slug: "other-app",
+          },
+          pull_requests: [],
+        },
+        repository: {
+          id: 22,
+          name: "repo",
+          default_branch: "main",
+          html_url: "https://github.com/acme/repo",
+          owner: { login: "acme" },
+        },
+      },
+      githubClient,
+      verificationService,
+      logger,
+      appName: "TrustSignal",
+    });
+
+    expect(result).toEqual({ accepted: true, ignored: false, receiptId: "rcpt_3" });
+  });
 });

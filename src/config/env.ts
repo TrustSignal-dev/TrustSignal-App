@@ -5,7 +5,10 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   GITHUB_APP_ID: z.string().min(1, "GITHUB_APP_ID is required"),
   GITHUB_APP_NAME: z.string().min(1, "GITHUB_APP_NAME is required"),
-  GITHUB_WEBHOOK_SECRET: z.string().min(1, "GITHUB_WEBHOOK_SECRET is required"),
+  GITHUB_WEBHOOK_SECRET: z
+    .string()
+    .transform((value) => value.trim())
+    .refine((value) => value.length > 0, "GITHUB_WEBHOOK_SECRET is required"),
   GITHUB_PRIVATE_KEY: z.string().optional(),
   GITHUB_PRIVATE_KEY_PEM: z.string().optional(),
   GITHUB_API_BASE_URL: z.string().url("GITHUB_API_BASE_URL must be a valid URL").optional(),
