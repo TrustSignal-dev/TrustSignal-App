@@ -153,6 +153,8 @@ The repository includes two baseline GitHub Actions workflows:
 - `CodeQL`: scans the TypeScript codebase on pull requests, pushes to `main`, and a weekly schedule
 - `Scorecards`: runs supply-chain posture checks on `main` and on a weekly schedule
 
+This repository keeps merge gates intentionally lean so a solo founder can move quickly without dropping basic safety checks.
+
 ## GitHub Action Runtime
 
 The GitHub Action entry point lives in `apps/action/src/main.ts`. It reads GitHub Actions environment variables and the event payload from `GITHUB_EVENT_PATH`, normalizes that payload into the same TrustSignal verification request used by the GitHub App, and submits it with the same API client.
