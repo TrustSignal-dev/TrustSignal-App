@@ -149,6 +149,9 @@ The repository includes two baseline GitHub Actions workflows:
 
 - `CI`: runs `npm run validate` on pull requests and pushes to `main` across Node.js 20 and 22
 - `Action Bundle Check`: rebuilds `apps/action/dist/index.js` and fails if the committed bundle is out of date
+- `Dependency Review`: blocks pull requests that introduce moderate-or-higher vulnerable dependencies
+- `CodeQL`: scans the TypeScript codebase on pull requests, pushes to `main`, and a weekly schedule
+- `Scorecards`: runs supply-chain posture checks on `main` and on a weekly schedule
 
 ## GitHub Action Runtime
 
