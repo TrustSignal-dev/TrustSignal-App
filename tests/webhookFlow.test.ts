@@ -151,15 +151,16 @@ describe("handleGitHubWebhook", () => {
     expect(result).toEqual({ accepted: true, ignored: false, receiptId: "rcpt_2" });
     expect(githubClient.createCheckRun).toHaveBeenCalledTimes(1);
     expect(githubClient.updateCheckRun).toHaveBeenCalledTimes(1);
-    expect(githubClient.createCheckRun).toHaveBeenCalledWith(
-      11,
-      "acme",
-      "repo",
-      expect.objectContaining({
-        status: "in_progress",
+    const createCall = (githubClient.createCheckRun as any).mock.calls[0];
+    expect(createCall[0]).toBe(11);
+    expect(createCall[1]).toBe("acme");
+    expect(createCall[2]).toBe("repo");
+    expect(createCall[3]).toMatchObject({
+      status: "in_progress",
+      output: {
         title: "Verification started",
-      })
-    );
+      },
+    });
   });
 
   it("processes requested check_suite events using after as fallback", async () => {
@@ -224,5 +225,70 @@ describe("handleGitHubWebhook", () => {
     });
 
     expect(result).toEqual({ accepted: true, ignored: false, receiptId: "rcpt_3" });
+  });
+
+  it("processes requested check_suite events even when the check suite app matches the GitHub app", async () => {
+    const githubClient = {
+      createCheckRun: vi
+        .fn()
+        .mockResolvedValueOnce({ id: 101, html_url: "https://github.com/acme/repo/runs/101", status: "in_progress" }),
+      updateCheckRun: vi
+        .fn()
+        .mockResolvedValueOnce({ id: 101, html_url: "https://github.com/acme/repo/runs/101", status: "completed", conclusion: "success" }),
+    } as any;
+    const verificationService = {
+      verify: vi.fn().mockResolvedValue({
+        status: "completed",
+        conclusion: "success",
+        title: "Artifact verification completed",
+        summary: "Verification succeeded",
+        detailsUrl: "https://trustsignal.example.com/receipts/rcpt_4",
+        receiptId: "rcpt_4",
+        verificationTimestamp: "2026-03-14T00:00:00.000Z",
+        provenanceNote: "check_suite event check_suite:999",
+      }),
+    };
+    const logger = {
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    } as any;
+
+    const result = await handleGitHubWebhook({
+      parsed: {
+        deliveryId: "delivery-4",
+        event: "check_suite",
+        action: "requested",
+        installationId: 11,
+      },
+      payload: {
+        action: "requested",
+        check_suite: {
+          id: 999,
+          head_sha: "def5678",
+          status: "queued",
+          conclusion: null,
+          head_branch: "main",
+          app: {
+            name: "TrustSignal-Verify",
+            slug: "trustsignal-verify",
+          },
+          pull_requests: [],
+        },
+        repository: {
+          id: 22,
+          name: "repo",
+          default_branch: "main",
+          html_url: "https://github.com/acme/repo",
+          owner: { login: "acme" },
+        },
+      },
+      githubClient,
+      verificationService,
+      logger,
+      appName: "TrustSignal-Verify",
+    });
+
+    expect(result).toEqual({ accepted: true, ignored: false, receiptId: "rcpt_4" });
   });
 });

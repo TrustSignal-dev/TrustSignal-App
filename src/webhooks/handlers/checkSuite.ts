@@ -7,13 +7,8 @@ export function normalizeCheckSuiteEvent(input: {
   deliveryId: string;
   installationId: number;
   githubEnterpriseVersion?: string;
-  appName: string;
 }) {
   if (input.action !== "requested" && input.action !== "rerequested") {
-    return null;
-  }
-
-  if (input.payload?.check_suite?.app?.name === input.appName || input.payload?.check_suite?.app?.slug === input.appName.toLowerCase()) {
     return null;
   }
 

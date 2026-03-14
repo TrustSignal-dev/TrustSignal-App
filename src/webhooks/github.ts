@@ -59,7 +59,6 @@ export async function handleGitHubWebhook(input: HandleWebhookInput) {
         payload: input.payload,
         deliveryId: input.parsed.deliveryId,
         installationId: input.parsed.installationId,
-        appName: input.appName,
       });
       break;
     case "check_run":
