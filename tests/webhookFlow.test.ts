@@ -290,4 +290,227 @@ describe("handleGitHubWebhook", () => {
 
     expect(result).toEqual({ accepted: true, ignored: false, receiptId: "rcpt_4" });
   });
+
+  it("marks the check run as failure when TrustSignal verification fails", async () => {
+    const githubClient = {
+      getWorkflowRun: vi.fn(),
+      createCheckRun: vi
+        .fn()
+        .mockResolvedValueOnce({ id: 77, html_url: "https://github.com/acme/repo/runs/77", status: "in_progress" }),
+      updateCheckRun: vi.fn(),
+    } as any;
+    const verificationService = {
+      verify: vi.fn().mockRejectedValue(new Error("trustsignal service unavailable")),
+    };
+    const logger = {
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    } as any;
+
+    const result = await handleGitHubWebhook({
+      parsed: {
+        deliveryId: "delivery-5",
+        event: "check_suite",
+        action: "requested",
+        installationId: 11,
+      },
+      payload: {
+        action: "requested",
+        check_suite: {
+          id: 555,
+          head_sha: "def5678",
+          status: "queued",
+          conclusion: null,
+          head_branch: "main",
+          app: {
+            slug: "other-app",
+          },
+          pull_requests: [],
+        },
+        repository: {
+          id: 22,
+          name: "repo",
+          default_branch: "main",
+          html_url: "https://github.com/acme/repo",
+          owner: { login: "acme" },
+        },
+      },
+      githubClient,
+      verificationService,
+      logger,
+      appName: "TrustSignal",
+    });
+
+    expect(result).toEqual({ accepted: false, ignored: false });
+    expect(githubClient.createCheckRun).toHaveBeenCalledTimes(1);
+    expect(githubClient.updateCheckRun).toHaveBeenCalledTimes(1);
+    expect(githubClient.updateCheckRun).toHaveBeenCalledWith(
+      11,
+      "acme",
+      "repo",
+      77,
+      expect.objectContaining({
+        status: "completed",
+        conclusion: "failure",
+      })
+    );
+  });
+
+  it("falls back to a completed failure check run when publishing the success result fails", async () => {
+    const githubClient = {
+      getWorkflowRun: vi.fn(),
+      createCheckRun: vi
+        .fn()
+        .mockResolvedValueOnce({ id: 88, html_url: "https://github.com/acme/repo/runs/88", status: "in_progress" }),
+      updateCheckRun: vi
+        .fn()
+        .mockRejectedValueOnce(new Error("transient failure"))
+        .mockResolvedValueOnce({
+          id: 88,
+          html_url: "https://github.com/acme/repo/runs/88",
+          status: "completed",
+          conclusion: "failure",
+        }),
+    } as any;
+    const verificationService = {
+      verify: vi.fn().mockResolvedValue({
+        status: "completed",
+        conclusion: "success",
+        title: "Artifact verification completed",
+        summary: "Verification succeeded",
+        detailsUrl: "https://trustsignal.example.com/receipts/rcpt_5",
+        receiptId: "rcpt_5",
+        verificationTimestamp: "2026-03-14T00:00:00.000Z",
+        provenanceNote: "check_suite event check_suite:700",
+      }),
+    };
+    const logger = {
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    } as any;
+
+    const result = await handleGitHubWebhook({
+      parsed: {
+        deliveryId: "delivery-6",
+        event: "check_suite",
+        action: "requested",
+        installationId: 11,
+      },
+      payload: {
+        action: "requested",
+        check_suite: {
+          id: 700,
+          head_sha: "feedbeef",
+          status: "queued",
+          conclusion: null,
+          head_branch: "main",
+          app: {
+            slug: "other-app",
+          },
+          pull_requests: [],
+        },
+        repository: {
+          id: 22,
+          name: "repo",
+          default_branch: "main",
+          html_url: "https://github.com/acme/repo",
+          owner: { login: "acme" },
+        },
+      },
+      githubClient,
+      verificationService,
+      logger,
+      appName: "TrustSignal",
+    });
+
+    expect(result).toEqual({ accepted: false, ignored: false });
+    expect(githubClient.createCheckRun).toHaveBeenCalledTimes(1);
+    expect(githubClient.updateCheckRun).toHaveBeenCalledTimes(2);
+    expect(githubClient.updateCheckRun).toHaveBeenNthCalledWith(
+      1,
+      11,
+      "acme",
+      "repo",
+      88,
+      expect.objectContaining({
+        status: "completed",
+        conclusion: "success",
+      })
+    );
+    expect(githubClient.updateCheckRun).toHaveBeenNthCalledWith(
+      2,
+      11,
+      "acme",
+      "repo",
+      88,
+      expect.objectContaining({
+        status: "completed",
+        conclusion: "failure",
+      })
+    );
+  });
+
+  it("returns accepted false when installation auth prevents check-run creation", async () => {
+    const githubClient = {
+      getWorkflowRun: vi.fn().mockResolvedValue({
+        data: {
+          id: 7001,
+          status: "completed",
+          conclusion: "success",
+          head_sha: "deadbeef",
+          html_url: "https://github.com/acme/repo/actions/runs/7001",
+          name: "CI",
+          event: "push",
+        },
+      }),
+      createCheckRun: vi.fn().mockRejectedValue(new Error("installation authentication failed")),
+      updateCheckRun: vi.fn(),
+    } as any;
+    const verificationService = {
+      verify: vi.fn(),
+    };
+    const logger = {
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    } as any;
+
+    const result = await handleGitHubWebhook({
+      parsed: {
+        deliveryId: "delivery-7",
+        event: "workflow_run",
+        action: "completed",
+        installationId: 11,
+      },
+      payload: {
+        action: "completed",
+        workflow_run: {
+          id: 7001,
+          status: "completed",
+          conclusion: "success",
+          head_sha: "deadbeef",
+          html_url: "https://github.com/acme/repo/actions/runs/7001",
+          name: "CI",
+          event: "push",
+        },
+        repository: {
+          id: 22,
+          name: "repo",
+          default_branch: "main",
+          html_url: "https://github.com/acme/repo",
+          owner: { login: "acme" },
+        },
+      },
+      githubClient,
+      verificationService,
+      logger,
+      appName: "TrustSignal",
+    });
+
+    expect(result).toEqual({ accepted: false, ignored: false });
+    expect(githubClient.createCheckRun).toHaveBeenCalledTimes(1);
+    expect(githubClient.updateCheckRun).not.toHaveBeenCalled();
+  });
 });

@@ -221,7 +221,9 @@ https://<your-tunnel-host>/webhooks/github
 
 `/github/installations` and `/github/check-run` are internal endpoints and require the dedicated internal API key via `Authorization: Bearer <INTERNAL_API_KEY>` or `x-api-key`.
 
-`GET /` returns a minimal service descriptor for load balancers, demos, and quick smoke checks. `GET /health` returns environment, uptime, and timestamp data suitable for readiness checks.
+`GET /` returns a minimal service descriptor for load balancers, demos, and quick smoke checks. `GET /health` returns environment, uptime, timestamp, and deployment metadata (`gitSha`, `buildTime`, `version`) suitable for readiness checks.
+
+- `GET /version` is a compact deployment verification endpoint with the same metadata.
 
 ## Registering The GitHub App
 
