@@ -4152,6 +4152,7 @@ function mapProvenanceEventName(eventName) {
 // src/trustsignal/client.ts
 var TrustSignalVerificationClient = class {
   baseUrl;
+  candidatePaths = ["/v1/verifications/github", "/api/v1/verifications/github"];
   timeoutMs;
   fetchImpl;
   constructor(config, fetchImpl = globalThis.fetch) {
@@ -4165,27 +4166,67 @@ var TrustSignalVerificationClient = class {
     const payload = trustSignalVerificationRequestSchema.parse(request);
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
+    const payloadText = JSON.stringify(payload);
+    let lastError = null;
     try {
-      const response = await this.fetchImpl(`${this.baseUrl}/v1/verifications/github`, {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          authorization: `Bearer ${this.apiKey}`
-        },
-        body: JSON.stringify(payload),
-        signal: controller.signal
-      });
-      const text = await response.text();
-      const parsed = text ? JSON.parse(text) : {};
-      if (!response.ok) {
-        throw new Error(`TrustSignal verification request failed with status ${response.status}`);
+      for (const candidatePath of this.candidatePaths) {
+        const endpoint = `${this.baseUrl}${candidatePath}`;
+        const response = await this.fetchImpl(endpoint, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            authorization: `Bearer ${this.apiKey}`
+          },
+          body: payloadText,
+          signal: controller.signal
+        });
+        const text = await response.text();
+        const contentType = response.headers?.get("content-type") ?? "";
+        const isJson = contentType.includes("application/json") || looksLikeJson(text);
+        const preview = text.slice(0, 120);
+        if (!isJson) {
+          if (response.status === 404 && this.canFallback(candidatePath)) {
+            lastError = `TrustSignal verification endpoint mismatch for ${endpoint}: response is not JSON`;
+            continue;
+          }
+          throw new Error(
+            `TrustSignal verification response for ${endpoint} was not JSON (content-type: ${contentType || "missing"}, status: ${response.status}, body: ${preview})`
+          );
+        }
+        let parsed;
+        try {
+          parsed = text ? JSON.parse(text) : {};
+        } catch {
+          if (response.status === 404 && this.canFallback(candidatePath)) {
+            lastError = `TrustSignal verification endpoint mismatch for ${endpoint}: response body is not valid JSON (status ${response.status})`;
+            continue;
+          }
+          throw new Error(`TrustSignal verification response from ${endpoint} could not be parsed as JSON`);
+        }
+        if (!response.ok) {
+          if (response.status === 404 && this.canFallback(candidatePath)) {
+            lastError = `TrustSignal verification request to ${endpoint} returned HTTP ${response.status}: ${preview}`;
+            continue;
+          }
+          throw new Error(
+            `TrustSignal verification request failed with status ${response.status} on ${endpoint}: ${typeof parsed === "object" && parsed !== null && "error" in parsed ? parsed.error : preview}`
+          );
+        }
+        return trustSignalVerificationResponseSchema.parse(parsed);
       }
-      return trustSignalVerificationResponseSchema.parse(parsed);
+      throw new Error(lastError ?? "TrustSignal verification request failed on all configured endpoint variants");
     } finally {
       clearTimeout(timeout);
     }
   }
+  canFallback(path) {
+    return path === "/v1/verifications/github";
+  }
 };
+function looksLikeJson(value) {
+  const text = value.trim();
+  return text.startsWith("{") || text.startsWith("[");
+}
 
 // src/trustsignal/github.ts
 function normalizeGitHubEventToEnvelope(input) {
