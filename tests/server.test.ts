@@ -248,7 +248,7 @@ describe("route handlers", () => {
     expect(services.replayStore.release).not.toHaveBeenCalled();
   });
 
-  it("releases a delivery after processing failure so retries can continue", async () => {
+  it("completes a delivery after processing failure so fail-closed check publish can finish", async () => {
     const services = createServices();
     services.verificationService.verify = vi.fn().mockRejectedValue(new Error("trustsignal unavailable"));
     const handler = createGitHubWebhookHandler(services);
@@ -271,9 +271,9 @@ describe("route handlers", () => {
 
     await handler(req, createMockResponse() as any, next);
 
-    expect(next).toHaveBeenCalledOnce();
-    expect(services.replayStore.release).toHaveBeenCalledWith("delivery-failure");
-    expect(services.replayStore.complete).not.toHaveBeenCalled();
+    expect(next).not.toHaveBeenCalled();
+    expect(services.replayStore.release).not.toHaveBeenCalled();
+    expect(services.replayStore.complete).toHaveBeenCalledWith("delivery-failure");
   });
 
   it("rejects missing installation ids", async () => {
