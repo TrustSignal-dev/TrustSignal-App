@@ -39,8 +39,8 @@ This keeps the website, outbound verification API, and inbound webhook receiver 
 
 `TRUSTSIGNAL_API_BASE_URL` must target the API origin only and is currently normalized as:
 
-- Primary path: `/v1/verifications/github`
-- Compatibility path: `/api/v1/verifications/github` (used when the primary route is unavailable)
+- Primary path: `/api/v1/verifications/github`
+- Compatibility path: `/v1/verifications/github` (used when the primary route is unavailable)
 
 If the API is moved or renamed, update `TRUSTSIGNAL_API_BASE_URL` and keep only one canonical base URL.
 

@@ -29,7 +29,7 @@ export interface FetchLike {
 
 export class TrustSignalVerificationClient {
   private readonly baseUrl: string;
-  private readonly candidatePaths = ["/v1/verifications/github", "/api/v1/verifications/github"] as const;
+  private readonly candidatePaths = ["/api/v1/verifications/github", "/v1/verifications/github"] as const;
   private readonly timeoutMs: number;
   private readonly fetchImpl: FetchLike;
 
@@ -111,7 +111,7 @@ export class TrustSignalVerificationClient {
   }
 
   private canFallback(path: (typeof this.candidatePaths)[number]) {
-    return path === "/v1/verifications/github";
+    return path === "/api/v1/verifications/github";
   }
 }
 
