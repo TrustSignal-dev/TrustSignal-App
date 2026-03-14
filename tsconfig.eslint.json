@@ -5,5 +5,5 @@
     "noEmit": true,
     "types": ["node", "vitest/globals"]
   },
-  "include": ["src", "tests", "apps/action/src", "vitest.config.ts"]
+  "include": ["src", "api", "tests", "apps/action/src", "vitest.config.ts"]
 }

@@ -37,6 +37,16 @@ Initial behavior is intentionally narrow:
 
 ## Architecture Overview
 
+This repository contains two distinct runtime surfaces:
+
+- GitHub App backend: the public webhook receiver and operational API in `src/`
+- GitHub Action runtime: the bundled action in `apps/action/` that runs inside GitHub-hosted runners
+
+They are not deployed the same way:
+
+- The GitHub Action is committed code executed by GitHub Actions runners and only needs outbound access to the TrustSignal verification API.
+- The GitHub App backend is a separately deployed HTTP service that must expose a public webhook URL.
+
 Core modules:
 
 - `src/config/env.ts`: environment validation
@@ -112,6 +122,13 @@ Required values:
 - `INTERNAL_API_KEY`
 - `LOG_LEVEL`
 
+Important distinction:
+
+- `TRUSTSIGNAL_API_BASE_URL` is the outbound verification API this service calls, for example `https://api.trustsignal.dev`.
+- The GitHub App webhook host is the public host that receives inbound webhooks, for example `https://github.trustsignal.dev/webhooks/github`.
+
+Do not assume those are the same service unless your deployment explicitly serves both route sets.
+
 ## Local Development
 
 1. Install dependencies:
@@ -184,6 +201,8 @@ steps:
   - run: echo "Receipt ${{ steps.trustsignal.outputs.receipt_id }}"
 ```
 
+The GitHub Action does not require this repository's webhook backend to be deployed. It only needs a reachable TrustSignal verification API.
+
 ## Local Webhook Testing
 
 Use a local tunnel such as ngrok or Cloudflare Tunnel and set the GitHub App webhook URL to your tunneled endpoint:
@@ -211,8 +230,16 @@ Create the app in GitHub settings with these manual values:
 - App name: `TrustSignal`
 - Description: `Integrity verification for CI artifacts and releases`
 - Homepage URL: your TrustSignal site or repository URL
-- Webhook URL: `https://<your-public-api-host>/webhooks/github`
+- Webhook URL: `https://<your-github-app-host>/webhooks/github`
 - Webhook secret: generate and store as `GITHUB_WEBHOOK_SECRET`
+
+Recommended production split:
+
+- `trustsignal.dev`: website / marketing app
+- `api.trustsignal.dev`: public TrustSignal verification API used by the GitHub Action and other clients
+- `github.trustsignal.dev`: GitHub App backend from this repository
+
+This separation avoids breaking the website or verification API when you redeploy the webhook receiver.
 
 Permissions:
 

@@ -10,6 +10,19 @@ execFileSync(
   "npx",
   [
     "esbuild",
+    "src/server.ts",
+    "--bundle",
+    "--platform=node",
+    "--target=node20",
+    "--format=cjs",
+    "--outfile=dist/server.bundle.cjs",
+  ],
+  { stdio: "inherit" }
+);
+execFileSync(
+  "npx",
+  [
+    "esbuild",
     "apps/action/src/main.ts",
     "--bundle",
     "--platform=node",
