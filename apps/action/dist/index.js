@@ -4152,7 +4152,7 @@ function mapProvenanceEventName(eventName) {
 // src/trustsignal/client.ts
 var TrustSignalVerificationClient = class {
   baseUrl;
-  candidatePaths = ["/v1/verifications/github", "/api/v1/verifications/github"];
+  candidatePaths = ["/api/v1/verifications/github", "/v1/verifications/github"];
   timeoutMs;
   fetchImpl;
   constructor(config, fetchImpl = globalThis.fetch) {
@@ -4220,7 +4220,7 @@ var TrustSignalVerificationClient = class {
     }
   }
   canFallback(path) {
-    return path === "/v1/verifications/github";
+    return path === "/api/v1/verifications/github";
   }
 };
 function looksLikeJson(value) {

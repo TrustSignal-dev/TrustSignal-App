@@ -107,7 +107,7 @@ jobs:
               "sha": "'"${GITHUB_SHA}"'",
               "artifactDigest": "'"${{ steps.digest.outputs.sha256 }}"'"
             }' \
-            "${TRUSTSIGNAL_API_BASE_URL}/v1/verifications/github"
+            "${TRUSTSIGNAL_API_BASE_URL}/api/v1/verifications/github"
 ```
 
 ## Compatibility Notes

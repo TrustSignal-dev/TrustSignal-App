@@ -125,8 +125,8 @@ Required values:
 Important distinction:
 
 - `TRUSTSIGNAL_API_BASE_URL` is the outbound verification API this service calls, for example `https://api.trustsignal.dev`.
-  - Primary route expected by this service: `${TRUSTSIGNAL_API_BASE_URL}/v1/verifications/github`
-  - Compatibility route (if needed): `${TRUSTSIGNAL_API_BASE_URL}/api/v1/verifications/github`
+  - Primary route expected by this service: `${TRUSTSIGNAL_API_BASE_URL}/api/v1/verifications/github`
+  - Compatibility route (if needed): `${TRUSTSIGNAL_API_BASE_URL}/v1/verifications/github`
 
   The API base URL is distinct from the webhook host:
   - App callback/base webhook host: `https://github.trustsignal.dev`

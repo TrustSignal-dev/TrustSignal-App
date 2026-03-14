@@ -51,7 +51,7 @@ describe("TrustSignalVerificationClient", () => {
     const result = await client.verify(request);
 
     expect(fetchImpl).toHaveBeenCalledWith(
-      "https://trustsignal.example.com/v1/verifications/github",
+      "https://trustsignal.example.com/api/v1/verifications/github",
       expect.objectContaining({
         method: "POST",
         headers: expect.objectContaining({
@@ -62,7 +62,7 @@ describe("TrustSignalVerificationClient", () => {
     expect(result.receiptId).toBe("rcpt_1");
   });
 
-  it("falls back to /api/v1/verifications/github when /v1 returns HTML", async () => {
+  it("falls back to /v1/verifications/github when /api returns HTML", async () => {
     const fallbackResponse = {
       ok: true,
       status: 200,
@@ -89,7 +89,7 @@ describe("TrustSignalVerificationClient", () => {
     };
 
     const fetchImplementation = vi.fn(async (url: string) => {
-      const response = url === "https://trustsignal.example.com/v1/verifications/github" ? primaryResponse : fallbackResponse;
+      const response = url === "https://trustsignal.example.com/api/v1/verifications/github" ? primaryResponse : fallbackResponse;
       return {
         ok: response.ok,
         status: response.status,
@@ -131,7 +131,7 @@ describe("TrustSignalVerificationClient", () => {
     expect(fetchImplementation).toHaveBeenCalledTimes(2);
     expect(fetchImplementation).toHaveBeenNthCalledWith(
       1,
-      "https://trustsignal.example.com/v1/verifications/github",
+      "https://trustsignal.example.com/api/v1/verifications/github",
       expect.objectContaining({
         method: "POST",
         headers: expect.objectContaining({
@@ -141,7 +141,7 @@ describe("TrustSignalVerificationClient", () => {
     );
     expect(fetchImplementation).toHaveBeenNthCalledWith(
       2,
-      "https://trustsignal.example.com/api/v1/verifications/github",
+      "https://trustsignal.example.com/v1/verifications/github",
       expect.objectContaining({
         method: "POST",
         headers: expect.objectContaining({
@@ -188,7 +188,7 @@ describe("TrustSignalVerificationClient", () => {
       },
     });
 
-    await expect(client.verify(request)).rejects.toThrow("TrustSignal verification response for https://trustsignal.example.com/api/v1/verifications/github was not JSON");
+    await expect(client.verify(request)).rejects.toThrow("TrustSignal verification response for https://trustsignal.example.com/v1/verifications/github was not JSON");
     expect(fetchImplementation).toHaveBeenCalledTimes(2);
   });
 });
