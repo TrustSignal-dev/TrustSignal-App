@@ -13,6 +13,8 @@ export function normalizeGitHubEventToEnvelope(input: {
       return normalizeReleasePayload(input.payload);
     case "push":
       return normalizePushPayload(input.payload);
+    case "check_suite":
+      return normalizeCheckSuitePayload(input.payload);
     default:
       return null;
   }
@@ -103,6 +105,41 @@ export function normalizePushPayload(payload: Record<string, any>): GitHubVerifi
       after: payload.after,
       before: payload.before,
       ref,
+    },
+  };
+}
+
+export function normalizeCheckSuitePayload(payload: Record<string, any>): GitHubVerificationEnvelope | null {
+  const checkSuite = payload.check_suite;
+  const repository = payload.repository;
+
+  if (!checkSuite || !repository || typeof checkSuite.head_sha !== "string" || !checkSuite.head_sha) {
+    return null;
+  }
+
+  if (checkSuite.app?.slug === "trustsignal") {
+    return null;
+  }
+
+  return {
+    eventName: "check_suite",
+    repository: {
+      id: repository.id,
+      owner: repository.owner.name || repository.owner.login,
+      repo: repository.name,
+      defaultBranch: repository.default_branch,
+      htmlUrl: repository.html_url,
+    },
+    headSha: checkSuite.head_sha,
+    externalId: `check_suite:${checkSuite.id}`,
+    summaryContext: `check suite ${checkSuite.id}`,
+    detailsUrl: checkSuite.url,
+    provenance: {
+      action: payload.action,
+      checkSuiteStatus: checkSuite.status,
+      checkSuiteConclusion: checkSuite.conclusion,
+      pullRequests: Array.isArray(payload.check_suite?.pull_requests) ? payload.check_suite.pull_requests.length : 0,
+      appSlug: checkSuite.app?.slug,
     },
   };
 }

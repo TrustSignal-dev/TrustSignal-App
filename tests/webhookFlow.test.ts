@@ -85,4 +85,80 @@ describe("handleGitHubWebhook", () => {
     );
     expect(githubClient.getWorkflowRun).toHaveBeenCalledWith(7, "acme", "repo", 101);
   });
+
+  it("processes requested check_suite events", async () => {
+    const githubClient = {
+      getWorkflowRun: vi.fn(),
+      createCheckRun: vi
+        .fn()
+        .mockResolvedValueOnce({ id: 84, html_url: "https://github.com/acme/repo/runs/84", status: "in_progress" }),
+      updateCheckRun: vi
+        .fn()
+        .mockResolvedValueOnce({ id: 84, html_url: "https://github.com/acme/repo/runs/84", status: "completed", conclusion: "success" }),
+    } as any;
+    const verificationService = {
+      verify: vi.fn().mockResolvedValue({
+        status: "completed",
+        conclusion: "success",
+        title: "Artifact verification completed",
+        summary: "Verification succeeded",
+        detailsUrl: "https://trustsignal.example.com/receipts/rcpt_2",
+        receiptId: "rcpt_2",
+        verificationTimestamp: "2026-03-14T00:00:00.000Z",
+        provenanceNote: "check_suite event check_suite:321",
+      }),
+    };
+    const logger = {
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    } as any;
+
+    const result = await handleGitHubWebhook({
+      parsed: {
+        deliveryId: "delivery-2",
+        event: "check_suite",
+        action: "requested",
+        installationId: 11,
+      },
+      payload: {
+        action: "requested",
+        check_suite: {
+          id: 321,
+          head_sha: "def5678",
+          status: "queued",
+          conclusion: null,
+          head_branch: "main",
+          app: {
+            slug: "other-app",
+          },
+          pull_requests: [],
+        },
+        repository: {
+          id: 22,
+          name: "repo",
+          default_branch: "main",
+          html_url: "https://github.com/acme/repo",
+          owner: { login: "acme" },
+        },
+      },
+      githubClient,
+      verificationService,
+      logger,
+      appName: "TrustSignal",
+    });
+
+    expect(result).toEqual({ accepted: true, ignored: false, receiptId: "rcpt_2" });
+    expect(githubClient.createCheckRun).toHaveBeenCalledTimes(1);
+    expect(githubClient.updateCheckRun).toHaveBeenCalledTimes(1);
+    expect(githubClient.createCheckRun).toHaveBeenCalledWith(
+      11,
+      "acme",
+      "repo",
+      expect.objectContaining({
+        status: "in_progress",
+        title: "Verification started",
+      })
+    );
+  });
 });

@@ -54,7 +54,13 @@ export async function handleGitHubWebhook(input: HandleWebhookInput) {
       verificationJob = normalizePushEvent(base);
       break;
     case "check_suite":
-      normalizeCheckSuiteEvent(input.payload);
+      verificationJob = normalizeCheckSuiteEvent({
+        action: input.parsed.action,
+        payload: input.payload,
+        deliveryId: input.parsed.deliveryId,
+        installationId: input.parsed.installationId,
+        appName: input.appName,
+      });
       break;
     case "check_run":
       normalizeCheckRunEvent(input.payload, input.appName);
