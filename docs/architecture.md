@@ -2,13 +2,30 @@
 
 ## Service Boundaries
 
-This MVP is a single service that handles:
+This repository ships two related but separate runtime units:
+
+- GitHub App backend in `src/`
+- GitHub Action runtime in `apps/action/`
+
+The GitHub App backend is the deployable HTTP service. It handles:
 
 - GitHub webhook ingress
 - GitHub App and installation authentication
 - event normalization
 - TrustSignal verification orchestration
 - GitHub check-run publishing
+
+The GitHub Action runtime is not a hosted backend. GitHub executes it inside an Actions runner, and it only makes outbound requests to the TrustSignal verification API.
+
+## Deployment Model
+
+Preferred production split:
+
+- `trustsignal.dev`: main website
+- `api.trustsignal.dev`: public verification API
+- `github.trustsignal.dev`: GitHub App backend / webhook receiver for this repository
+
+This keeps the website, outbound verification API, and inbound webhook receiver operationally independent.
 
 ## Security Model
 
