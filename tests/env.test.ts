@@ -15,6 +15,7 @@ describe("parseEnv", () => {
       GITHUB_WEB_BASE_URL: "https://github.com",
       TRUSTSIGNAL_API_BASE_URL: "https://trustsignal.example.com",
       TRUSTSIGNAL_API_KEY: "api-key",
+      INTERNAL_API_KEY: "internal-key",
       LOG_LEVEL: "info",
     });
 
@@ -40,6 +41,7 @@ describe("parseEnv", () => {
       GITHUB_PRIVATE_KEY: "-----BEGIN RSA PRIVATE KEY-----\\nkey\\n-----END RSA PRIVATE KEY-----",
       TRUSTSIGNAL_API_BASE_URL: "https://trustsignal.example.com",
       TRUSTSIGNAL_API_KEY: "api-key",
+      INTERNAL_API_KEY: "internal-key",
       LOG_LEVEL: "info",
     });
 

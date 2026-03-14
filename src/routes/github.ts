@@ -67,12 +67,12 @@ export function createGitHubRouter({
   githubClient,
   logger,
 }: {
-  env: Pick<AppEnv, "TRUSTSIGNAL_API_KEY">;
+  env: Pick<AppEnv, "INTERNAL_API_KEY">;
   githubClient: GitHubApiClient;
   logger: Logger;
 }) {
   const router = Router();
-  const internalOnly = createInternalApiKeyMiddleware(env.TRUSTSIGNAL_API_KEY);
+  const internalOnly = createInternalApiKeyMiddleware(env.INTERNAL_API_KEY);
 
   router.get("/github/installations", internalOnly, async (_req, res, next) => {
     try {

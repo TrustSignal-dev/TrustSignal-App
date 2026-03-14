@@ -1,25 +1,39 @@
 export class ReplayStore {
   private readonly ttlMs: number;
-  private readonly values = new Map<string, number>();
+  private readonly values = new Map<string, { expiresAt: number; status: "in_flight" | "completed" }>();
 
   constructor(ttlMs = 15 * 60 * 1000) {
     this.ttlMs = ttlMs;
   }
 
-  has(key: string, now = Date.now()) {
+  getStatus(key: string, now = Date.now()) {
     this.prune(now);
-    const expiresAt = this.values.get(key);
-    return typeof expiresAt === "number" && expiresAt > now;
+    return this.values.get(key)?.status ?? null;
   }
 
-  add(key: string, now = Date.now()) {
+  begin(key: string, now = Date.now()) {
     this.prune(now);
-    this.values.set(key, now + this.ttlMs);
+    const existing = this.values.get(key);
+    if (existing && existing.expiresAt > now) {
+      return existing.status;
+    }
+
+    this.values.set(key, { expiresAt: now + this.ttlMs, status: "in_flight" });
+    return "started";
+  }
+
+  complete(key: string, now = Date.now()) {
+    this.prune(now);
+    this.values.set(key, { expiresAt: now + this.ttlMs, status: "completed" });
+  }
+
+  release(key: string) {
+    this.values.delete(key);
   }
 
   prune(now = Date.now()) {
-    for (const [key, expiresAt] of this.values.entries()) {
-      if (expiresAt <= now) {
+    for (const [key, value] of this.values.entries()) {
+      if (value.expiresAt <= now) {
         this.values.delete(key);
       }
     }

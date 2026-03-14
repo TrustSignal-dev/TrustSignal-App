@@ -13,6 +13,7 @@ const envSchema = z.object({
   GITHUB_WEB_BASE_URL: z.string().url("GITHUB_WEB_BASE_URL must be a valid URL").optional(),
   TRUSTSIGNAL_API_BASE_URL: z.string().url("TRUSTSIGNAL_API_BASE_URL must be a valid URL"),
   TRUSTSIGNAL_API_KEY: z.string().min(1, "TRUSTSIGNAL_API_KEY is required"),
+  INTERNAL_API_KEY: z.string().min(1, "INTERNAL_API_KEY is required"),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace"]).default("info"),
 });
 
