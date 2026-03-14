@@ -125,10 +125,6 @@ export function normalizeCheckSuitePayload(payload: Record<string, any>): GitHub
     return null;
   }
 
-  if (checkSuite.app?.slug === "trustsignal") {
-    return null;
-  }
-
   return {
     eventName: "check_suite",
     repository: {
