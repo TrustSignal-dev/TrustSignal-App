@@ -1,0 +1,24 @@
+{
+  "action": "completed",
+  "installation": {
+    "id": 123
+  },
+  "repository": {
+    "id": 456,
+    "name": "repo",
+    "default_branch": "main",
+    "html_url": "https://github.com/acme/repo",
+    "owner": {
+      "login": "acme"
+    }
+  },
+  "workflow_run": {
+    "id": 101,
+    "status": "completed",
+    "conclusion": "success",
+    "head_sha": "abc1234",
+    "html_url": "https://github.com/acme/repo/actions/runs/101",
+    "name": "CI",
+    "event": "push"
+  }
+}
