@@ -109,6 +109,7 @@ Required values:
 - `GITHUB_WEB_BASE_URL`
 - `TRUSTSIGNAL_API_BASE_URL`
 - `TRUSTSIGNAL_API_KEY`
+- `INTERNAL_API_KEY`
 - `LOG_LEVEL`
 
 ## Local Development
@@ -187,7 +188,7 @@ https://<your-tunnel-host>/webhooks/github
 - `GET /github/installations`
 - `POST /github/check-run`
 
-`/github/installations` and `/github/check-run` are internal endpoints and require the TrustSignal API key via `Authorization: Bearer <TRUSTSIGNAL_API_KEY>` or `x-api-key`.
+`/github/installations` and `/github/check-run` are internal endpoints and require the dedicated internal API key via `Authorization: Bearer <INTERNAL_API_KEY>` or `x-api-key`.
 
 `GET /` returns a minimal service descriptor for load balancers, demos, and quick smoke checks. `GET /health` returns environment, uptime, and timestamp data suitable for readiness checks.
 
@@ -236,6 +237,7 @@ When GitHub includes `x-github-enterprise-version`, TrustSignal records that val
 - verify webhook signatures before JSON parsing
 - never log secrets or full webhook payloads by default
 - use only installation-derived context for multi-tenant safety
+- delivery deduplication blocks concurrent duplicates but allows GitHub retries after failed processing
 - reuse the same GitHub check run for the accepted and completed states
 - return success only after the event has been safely accepted or processed
 - the app and the action both use the same shared TrustSignal verification contract and client

@@ -32,6 +32,9 @@ function createRequestId() {
 
 export function createGitHubWebhookHandler(services: AppServices) {
   return async (req: Request, res: Response, next: NextFunction) => {
+    let deliveryId: string | null = null;
+    let deliveryStarted = false;
+
     try {
       if (!req.is("application/json")) {
         throw new RequestValidationError("Content-Type must be application/json", "invalid_content_type");
@@ -55,11 +58,15 @@ export function createGitHubWebhookHandler(services: AppServices) {
       req.body = parsedBody;
 
       const parsedEvent = parseGitHubEventRequest(req);
-      if (services.replayStore.has(parsedEvent.deliveryId)) {
+      deliveryId = parsedEvent.deliveryId;
+      const replayStatus = services.replayStore.begin(parsedEvent.deliveryId);
+      if (replayStatus === "completed") {
         throw new ConflictError("Replay detected", "replay_detected");
       }
-
-      services.replayStore.add(parsedEvent.deliveryId);
+      if (replayStatus === "in_flight") {
+        throw new ConflictError("Delivery already in progress", "delivery_in_progress");
+      }
+      deliveryStarted = true;
 
       const result = await handleGitHubWebhook({
         parsed: parsedEvent,
@@ -70,8 +77,12 @@ export function createGitHubWebhookHandler(services: AppServices) {
         appName: services.env.GITHUB_APP_NAME,
       });
 
+      services.replayStore.complete(parsedEvent.deliveryId);
       res.status(202).json(result);
     } catch (error) {
+      if (deliveryStarted && deliveryId) {
+        services.replayStore.release(deliveryId);
+      }
       next(error);
     }
   };

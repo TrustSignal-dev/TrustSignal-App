@@ -71,7 +71,7 @@ Required secrets:
 - `GET /github/installations`
 - `POST /github/check-run`
 
-These routes are protected with the TrustSignal internal API key and are not intended for public exposure.
+These routes are protected with `INTERNAL_API_KEY` and are not intended for public exposure.
 
 ## Example Workflow
 
@@ -113,6 +113,6 @@ jobs:
 ## Compatibility Notes
 
 - The service does not persist installation tokens.
-- Delivery deduplication is in-memory for the MVP; deploy a shared dedupe store before scaling horizontally.
+- Delivery deduplication tracks in-flight and completed deliveries in memory for the MVP, so failed deliveries can be retried but horizontal scaling still needs a shared dedupe store.
 - GraphQL base URL is configurable for future feature work, but the current MVP uses REST endpoints only.
 - GHES support assumes REST endpoints compatible with the app installation, checks, releases, and actions APIs used here.

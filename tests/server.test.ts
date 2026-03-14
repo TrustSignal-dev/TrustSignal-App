@@ -34,7 +34,8 @@ function createServices() {
       GITHUB_GRAPHQL_BASE_URL: "https://api.github.com/graphql",
       GITHUB_WEB_BASE_URL: "https://github.com",
       TRUSTSIGNAL_API_BASE_URL: "https://trustsignal.example.com",
-      TRUSTSIGNAL_API_KEY: "internal-key",
+      TRUSTSIGNAL_API_KEY: "trustsignal-api-key",
+      INTERNAL_API_KEY: "internal-key",
       LOG_LEVEL: "info",
     },
     logger: {
@@ -43,8 +44,9 @@ function createServices() {
       error: vi.fn(),
     },
     replayStore: {
-      has: vi.fn().mockReturnValue(false),
-      add: vi.fn(),
+      begin: vi.fn().mockReturnValue("started"),
+      complete: vi.fn(),
+      release: vi.fn(),
     },
     githubClient: {
       listInstallations: vi.fn().mockResolvedValue([]),
@@ -106,6 +108,7 @@ describe("route handlers", () => {
 
     expect(res.statusCode).toBe(202);
     expect(next).not.toHaveBeenCalled();
+    expect(services.replayStore.complete).toHaveBeenCalledWith("delivery-1");
   });
 
   it("rejects an invalid signature", async () => {
@@ -168,7 +171,7 @@ describe("route handlers", () => {
 
   it("rejects replayed deliveries", async () => {
     const services = createServices();
-    services.replayStore.has = vi.fn().mockReturnValue(true);
+    services.replayStore.begin = vi.fn().mockReturnValue("completed");
     const handler = createGitHubWebhookHandler(services);
     const payload = {
       installation: { id: 123 },
@@ -203,6 +206,74 @@ describe("route handlers", () => {
     await handler(req, res as any, next);
 
     expect(next).toHaveBeenCalledOnce();
+    expect(services.replayStore.release).not.toHaveBeenCalled();
+  });
+
+  it("rejects deliveries already in progress", async () => {
+    const services = createServices();
+    services.replayStore.begin = vi.fn().mockReturnValue("in_flight");
+    const handler = createGitHubWebhookHandler(services);
+    const payload = {
+      installation: { id: 123 },
+      repository: {
+        name: "repo",
+        default_branch: "main",
+        html_url: "https://github.com/acme/repo",
+        owner: { login: "acme" },
+      },
+      ref: "refs/heads/main",
+      before: "abc1234",
+      after: "def5678",
+    };
+    const raw = Buffer.from(JSON.stringify(payload));
+    const signature = computeGitHubSignature("secret", raw);
+    const req = {
+      body: raw,
+      is: vi.fn().mockReturnValue(true),
+      header: vi.fn((name: string) => {
+        const headers: Record<string, string> = {
+          "x-github-event": "push",
+          "x-github-delivery": "delivery-in-flight",
+          "x-hub-signature-256": signature,
+          "content-type": "application/json",
+        };
+        return headers[name.toLowerCase()] || headers[name] || undefined;
+      }),
+    } as any;
+    const next = vi.fn();
+
+    await handler(req, createMockResponse() as any, next);
+
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ code: "delivery_in_progress" }));
+    expect(services.replayStore.release).not.toHaveBeenCalled();
+  });
+
+  it("releases a delivery after processing failure so retries can continue", async () => {
+    const services = createServices();
+    services.verificationService.verify = vi.fn().mockRejectedValue(new Error("trustsignal unavailable"));
+    const handler = createGitHubWebhookHandler(services);
+    const raw = fs.readFileSync(path.join(__dirname, "fixtures", "workflowRun.completed.json"));
+    const signature = computeGitHubSignature("secret", raw);
+    const req = {
+      body: raw,
+      is: vi.fn().mockReturnValue(true),
+      header: vi.fn((name: string) => {
+        const headers: Record<string, string> = {
+          "x-github-event": "workflow_run",
+          "x-github-delivery": "delivery-failure",
+          "x-hub-signature-256": signature,
+          "content-type": "application/json",
+        };
+        return headers[name.toLowerCase()] || headers[name] || undefined;
+      }),
+    } as any;
+    const next = vi.fn();
+
+    await handler(req, createMockResponse() as any, next);
+
+    expect(next).toHaveBeenCalledOnce();
+    expect(services.replayStore.release).toHaveBeenCalledWith("delivery-failure");
+    expect(services.replayStore.complete).not.toHaveBeenCalled();
   });
 
   it("rejects missing installation ids", async () => {
