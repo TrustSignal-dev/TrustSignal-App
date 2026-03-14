@@ -9,6 +9,9 @@ export interface TrustSignalClientConfig {
 export interface FetchLikeResponse {
   ok: boolean;
   status: number;
+  headers?: {
+    get(name: string): string | null;
+  };
   text(): Promise<string>;
 }
 
@@ -26,6 +29,7 @@ export interface FetchLike {
 
 export class TrustSignalVerificationClient {
   private readonly baseUrl: string;
+  private readonly candidatePaths = ["/v1/verifications/github", "/api/v1/verifications/github"] as const;
   private readonly timeoutMs: number;
   private readonly fetchImpl: FetchLike;
 
@@ -42,28 +46,76 @@ export class TrustSignalVerificationClient {
     const payload = trustSignalVerificationRequestSchema.parse(request);
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
+    const payloadText = JSON.stringify(payload);
+    let lastError: string | null = null;
 
     try {
-      const response = await this.fetchImpl(`${this.baseUrl}/v1/verifications/github`, {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          authorization: `Bearer ${this.apiKey}`,
-        },
-        body: JSON.stringify(payload),
-        signal: controller.signal,
-      });
+      for (const candidatePath of this.candidatePaths) {
+        const endpoint = `${this.baseUrl}${candidatePath}`;
+        const response = await this.fetchImpl(endpoint, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            authorization: `Bearer ${this.apiKey}`,
+          },
+          body: payloadText,
+          signal: controller.signal,
+        });
 
-      const text = await response.text();
-      const parsed = text ? (JSON.parse(text) as unknown) : {};
+        const text = await response.text();
+        const contentType = response.headers?.get("content-type") ?? "";
+        const isJson = contentType.includes("application/json") || looksLikeJson(text);
+        const preview = text.slice(0, 120);
 
-      if (!response.ok) {
-        throw new Error(`TrustSignal verification request failed with status ${response.status}`);
+        if (!isJson) {
+          if (response.status === 404 && this.canFallback(candidatePath)) {
+            lastError = `TrustSignal verification endpoint mismatch for ${endpoint}: response is not JSON`;
+            continue;
+          }
+
+          throw new Error(
+            `TrustSignal verification response for ${endpoint} was not JSON (content-type: ${contentType || "missing"}, status: ${response.status}, body: ${preview})`
+          );
+        }
+
+        let parsed: unknown;
+        try {
+          parsed = text ? (JSON.parse(text) as unknown) : {};
+        } catch {
+          if (response.status === 404 && this.canFallback(candidatePath)) {
+            lastError = `TrustSignal verification endpoint mismatch for ${endpoint}: response body is not valid JSON (status ${response.status})`;
+            continue;
+          }
+
+          throw new Error(`TrustSignal verification response from ${endpoint} could not be parsed as JSON`);
+        }
+
+        if (!response.ok) {
+          if (response.status === 404 && this.canFallback(candidatePath)) {
+            lastError = `TrustSignal verification request to ${endpoint} returned HTTP ${response.status}: ${preview}`;
+            continue;
+          }
+
+          throw new Error(
+            `TrustSignal verification request failed with status ${response.status} on ${endpoint}: ${typeof parsed === "object" && parsed !== null && "error" in parsed ? (parsed as Record<string, unknown>).error : preview}`
+          );
+        }
+
+        return trustSignalVerificationResponseSchema.parse(parsed);
       }
 
-      return trustSignalVerificationResponseSchema.parse(parsed);
+      throw new Error(lastError ?? "TrustSignal verification request failed on all configured endpoint variants");
     } finally {
       clearTimeout(timeout);
     }
   }
+
+  private canFallback(path: (typeof this.candidatePaths)[number]) {
+    return path === "/v1/verifications/github";
+  }
+}
+
+function looksLikeJson(value: string) {
+  const text = value.trim();
+  return text.startsWith("{") || text.startsWith("[");
 }

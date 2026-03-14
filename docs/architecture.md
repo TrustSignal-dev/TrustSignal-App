@@ -27,6 +27,36 @@ Preferred production split:
 
 This keeps the website, outbound verification API, and inbound webhook receiver operationally independent.
 
+### Runtime Inventory (Current Production)
+
+| Domain | Vercel Project | Purpose | Runtime Separation Status |
+| --- | --- | --- | --- |
+| `trustsignal.dev` | `v0-signal-new` | marketing/docs site | isolated |
+| `github.trustsignal.dev` | `trustsignal-github-app` | GitHub App backend | isolated |
+| `api.trustsignal.dev` | `api` | verification API (served from separate repo/project) | isolated |
+
+### Endpoint Contract Clarification
+
+`TRUSTSIGNAL_API_BASE_URL` must target the API origin only and is currently normalized as:
+
+- Primary path: `/v1/verifications/github`
+- Compatibility path: `/api/v1/verifications/github` (used when the primary route is unavailable)
+
+If the API is moved or renamed, update `TRUSTSIGNAL_API_BASE_URL` and keep only one canonical base URL.
+
+### Environment Boundaries by Service
+
+- GitHub App backend (`trustsignal-github-app`)
+  - `GITHUB_*`, `TRUSTSIGNAL_API_BASE_URL`, `TRUSTSIGNAL_API_KEY`, `INTERNAL_API_KEY`
+  - No marketing-site environment variables should be stored here
+- API service (`api`)
+  - API-only secrets and data-layer credentials
+  - No GitHub App installation credentials
+- Marketing/docs site (`v0-signal-new`)
+  - Static and docs/runtime variables only
+
+Keep each environment set to only the smallest required surface.
+
 ## Security Model
 
 - Fail closed when required GitHub App or webhook secrets are missing.
