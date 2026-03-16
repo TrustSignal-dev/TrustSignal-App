@@ -56,6 +56,7 @@ export class TrustSignalVerificationClient {
           method: "POST",
           headers: {
             "content-type": "application/json",
+            "accept": "application/json",
             authorization: `Bearer ${this.apiKey}`,
           },
           body: payloadText,

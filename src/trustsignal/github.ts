@@ -79,12 +79,18 @@ export function normalizeReleasePayload(payload: Record<string, any>): GitHubVer
   };
 }
 
+const ZERO_SHA = "0000000000000000000000000000000000000000";
+
 export function normalizePushPayload(payload: Record<string, any>): GitHubVerificationEnvelope | null {
   const repository = payload.repository;
   const ref = String(payload.ref || "");
   const branchName = ref.replace("refs/heads/", "");
 
-  if (branchName && repository.default_branch && branchName !== repository.default_branch) {
+  if (
+    (branchName && repository.default_branch && branchName !== repository.default_branch) ||
+    !payload.after ||
+    payload.after === ZERO_SHA
+  ) {
     return null;
   }
 
@@ -137,7 +143,7 @@ export function normalizeCheckSuitePayload(payload: Record<string, any>): GitHub
     headSha,
     externalId: `check_suite:${checkSuite.id}`,
     summaryContext: `check suite ${checkSuite.id}`,
-    detailsUrl: checkSuite.url,
+    detailsUrl: checkSuite.html_url || `${repository.html_url}/commit/${headSha}`,
     provenance: {
       action: payload.action,
       checkSuiteStatus: checkSuite.status,

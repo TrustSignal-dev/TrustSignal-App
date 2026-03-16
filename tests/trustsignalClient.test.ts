@@ -56,6 +56,7 @@ describe("TrustSignalVerificationClient", () => {
         method: "POST",
         headers: expect.objectContaining({
           authorization: "Bearer secret",
+          "accept": "application/json",
         }),
       })
     );
