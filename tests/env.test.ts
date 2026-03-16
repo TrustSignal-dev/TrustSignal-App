@@ -22,6 +22,7 @@ describe("parseEnv", () => {
 
     expect(env.GITHUB_PRIVATE_KEY_PEM).toContain("BEGIN RSA PRIVATE KEY");
     expect(env.GITHUB_API_BASE_URL).toBe("https://api.github.com");
+    expect(env.INTERNAL_API_KEY).toBe("internal-key,internal-key-2,internal-key-3");
     expect(env.INTERNAL_API_KEYS).toEqual(["internal-key", "internal-key-2", "internal-key-3"]);
   });
 
@@ -64,7 +65,7 @@ describe("parseEnv", () => {
       LOG_LEVEL: "info",
     });
 
-    expect(env.INTERNAL_API_KEY).toBe("internal-key-a");
+    expect(env.INTERNAL_API_KEY).toBe("internal-key-a,internal-key-b");
     expect(env.INTERNAL_API_KEYS).toEqual(["internal-key-a", "internal-key-b"]);
   });
 });

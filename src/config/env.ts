@@ -74,7 +74,7 @@ export function parseEnv(input: NodeJS.ProcessEnv): AppEnv {
     ...parsed,
     GITHUB_PRIVATE_KEY: normalizedKey,
     GITHUB_PRIVATE_KEY_PEM: normalizedKey,
-    INTERNAL_API_KEY: internalApiKeys[0],
+    INTERNAL_API_KEY: internalApiKeys.join(","),
     INTERNAL_API_KEYS: internalApiKeys,
   };
 }
