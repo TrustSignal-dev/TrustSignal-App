@@ -219,22 +219,22 @@ function getGitHubStatusCode(error: unknown) {
   return undefined;
 }
 
-function getRetryDelayMs(error: unknown, attempt: number) {
-  const headerValue =
-    typeof error === "object" &&
-    error !== null &&
-    "response" in error &&
-    typeof error.response === "object" &&
-    error.response !== null &&
-    "headers" in error.response &&
-    typeof error.response.headers === "object" &&
-    error.response.headers !== null &&
-    "retry-after" in error.response.headers
-      ? Number(error.response.headers["retry-after"])
-      : undefined;
+function getRetryAfterHeader(error: unknown): string | undefined {
+  if (typeof error !== "object" || error === null) return undefined;
+  const response = (error as Record<string, unknown>)["response"];
+  if (typeof response !== "object" || response === null) return undefined;
+  const headers = (response as Record<string, unknown>)["headers"];
+  if (typeof headers !== "object" || headers === null) return undefined;
+  const value = (headers as Record<string, unknown>)["retry-after"];
+  return value !== undefined ? String(value) : undefined;
+}
 
-  if (typeof headerValue === "number" && Number.isFinite(headerValue) && headerValue >= 0) {
-    return Math.min(headerValue * 1000, 5_000);
+function getRetryDelayMs(error: unknown, attempt: number) {
+  const headerValue = getRetryAfterHeader(error);
+  const delaySeconds = headerValue !== undefined ? Number(headerValue) : undefined;
+
+  if (typeof delaySeconds === "number" && Number.isFinite(delaySeconds) && delaySeconds >= 0) {
+    return Math.min(delaySeconds * 1000, 5_000);
   }
 
   return Math.min(250 * 2 ** attempt, 1_000);
