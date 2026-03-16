@@ -4175,6 +4175,7 @@ var TrustSignalVerificationClient = class {
           method: "POST",
           headers: {
             "content-type": "application/json",
+            "accept": "application/json",
             authorization: `Bearer ${this.apiKey}`
           },
           body: payloadText,
@@ -4296,11 +4297,12 @@ function normalizeReleasePayload(payload) {
     }
   };
 }
+var ZERO_SHA = "0000000000000000000000000000000000000000";
 function normalizePushPayload(payload) {
   const repository = payload.repository;
   const ref = String(payload.ref || "");
   const branchName = ref.replace("refs/heads/", "");
-  if (branchName && repository.default_branch && branchName !== repository.default_branch) {
+  if (branchName && repository.default_branch && branchName !== repository.default_branch || !payload.after || payload.after === ZERO_SHA) {
     return null;
   }
   return {
@@ -4342,7 +4344,7 @@ function normalizeCheckSuitePayload(payload) {
     headSha,
     externalId: `check_suite:${checkSuite.id}`,
     summaryContext: `check suite ${checkSuite.id}`,
-    detailsUrl: checkSuite.url,
+    detailsUrl: checkSuite.html_url || `${repository.html_url}/commit/${headSha}`,
     provenance: {
       action: payload.action,
       checkSuiteStatus: checkSuite.status,
