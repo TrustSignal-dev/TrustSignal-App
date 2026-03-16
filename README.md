@@ -120,6 +120,7 @@ Required values:
 - `TRUSTSIGNAL_API_BASE_URL`
 - `TRUSTSIGNAL_API_KEY`
 - `INTERNAL_API_KEY`
+- `INTERNAL_API_KEYS` (optional, comma-separated; useful for key rotation)
 - `LOG_LEVEL`
 
 Important distinction:
@@ -226,6 +227,8 @@ https://<your-tunnel-host>/webhooks/github
 - `POST /github/check-run`
 
 `/github/installations` and `/github/check-run` are internal endpoints and require the dedicated internal API key via `Authorization: Bearer <INTERNAL_API_KEY>` or `x-api-key`.
+
+To rotate keys safely in production, you can keep `INTERNAL_API_KEY` and add `INTERNAL_API_KEYS` with a comma-separated list of accepted keys. Any listed key is accepted.
 
 `GET /` returns a minimal service descriptor for load balancers, demos, and quick smoke checks. `GET /health` returns environment, uptime, timestamp, and deployment metadata (`gitSha`, `buildTime`, `version`) suitable for readiness checks.
 

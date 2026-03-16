@@ -169,6 +169,23 @@ describe("route handlers", () => {
     expect(next.mock.calls[0]?.[0]).toMatchObject({ statusCode: 401, code: "unauthorized" });
   });
 
+  it("accepts any configured internal API key from a comma-separated list", () => {
+    const middleware = createInternalApiKeyMiddleware("internal-key-1, internal-key-2");
+    const req = {
+      header: vi.fn((name: string) => {
+        if (name === "authorization") {
+          return "Bearer internal-key-2";
+        }
+        return undefined;
+      }),
+    } as any;
+    const next = vi.fn();
+
+    middleware(req, {} as any, next);
+
+    expect(next).toHaveBeenCalledWith();
+  });
+
   it("rejects replayed deliveries", async () => {
     const services = createServices();
     services.replayStore.begin = vi.fn().mockReturnValue("completed");
