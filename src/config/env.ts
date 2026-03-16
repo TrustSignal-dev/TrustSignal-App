@@ -42,10 +42,12 @@ export function parseEnv(input: NodeJS.ProcessEnv): AppEnv {
     ]);
   }
 
+  const normalizedKey = normalizePrivateKey(privateKey);
+
   return {
     ...parsed,
-    GITHUB_PRIVATE_KEY: normalizePrivateKey(privateKey),
-    GITHUB_PRIVATE_KEY_PEM: normalizePrivateKey(privateKey),
+    GITHUB_PRIVATE_KEY: normalizedKey,
+    GITHUB_PRIVATE_KEY_PEM: normalizedKey,
   };
 }
 

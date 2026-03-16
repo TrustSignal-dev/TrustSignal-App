@@ -1,9 +1,12 @@
 export class ReplayStore {
   private readonly ttlMs: number;
+  private readonly pruneIntervalMs: number;
   private readonly values = new Map<string, { expiresAt: number; status: "in_flight" | "completed" }>();
+  private lastPruneTime = 0;
 
-  constructor(ttlMs = 15 * 60 * 1000) {
+  constructor(ttlMs = 15 * 60 * 1000, pruneIntervalMs = 60_000) {
     this.ttlMs = ttlMs;
+    this.pruneIntervalMs = pruneIntervalMs;
   }
 
   getStatus(key: string, now = Date.now()) {
@@ -32,6 +35,10 @@ export class ReplayStore {
   }
 
   prune(now = Date.now()) {
+    if (now - this.lastPruneTime < this.pruneIntervalMs) {
+      return;
+    }
+    this.lastPruneTime = now;
     for (const [key, value] of this.values.entries()) {
       if (value.expiresAt <= now) {
         this.values.delete(key);

@@ -382,6 +382,8 @@ async function buildReleaseJob(
   });
 }
 
+const COMMIT_SHA_RE = /^[a-f0-9]{7,64}$/i;
+
 function looksLikeCommitSha(value: string) {
-  return /^[a-f0-9]{7,64}$/i.test(value);
+  return COMMIT_SHA_RE.test(value);
 }
