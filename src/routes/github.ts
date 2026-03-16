@@ -49,11 +49,18 @@ function safeEqual(a: string, b: string) {
 }
 
 export function createInternalApiKeyMiddleware(expected: string) {
+  const expectedTokens = expected
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+
   return (req: Request, _res: Response, next: NextFunction) => {
     const header = (req.header("authorization") || req.header("x-api-key") || "").trim();
     const token = header.startsWith("Bearer ") ? header.slice(7).trim() : header;
 
-    if (!token || !safeEqual(token, expected)) {
+    const isAuthorized = token && expectedTokens.some((expectedToken) => safeEqual(token, expectedToken));
+
+    if (!isAuthorized) {
       next(new AuthenticationError());
       return;
     }

@@ -13,19 +13,44 @@ const envSchema = z.object({
   GITHUB_WEB_BASE_URL: z.string().url("GITHUB_WEB_BASE_URL must be a valid URL").optional(),
   TRUSTSIGNAL_API_BASE_URL: z.string().url("TRUSTSIGNAL_API_BASE_URL must be a valid URL"),
   TRUSTSIGNAL_API_KEY: z.string().min(1, "TRUSTSIGNAL_API_KEY is required"),
-  INTERNAL_API_KEY: z.string().min(1, "INTERNAL_API_KEY is required"),
+  INTERNAL_API_KEY: z.string().min(1, "INTERNAL_API_KEY is required").optional(),
+  INTERNAL_API_KEYS: z.string().optional(),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace"]).default("info"),
 });
 
 type ParsedEnv = z.infer<typeof envSchema>;
 
-export interface AppEnv extends Omit<ParsedEnv, "GITHUB_PRIVATE_KEY" | "GITHUB_PRIVATE_KEY_PEM"> {
+export interface AppEnv extends Omit<ParsedEnv, "GITHUB_PRIVATE_KEY" | "GITHUB_PRIVATE_KEY_PEM" | "INTERNAL_API_KEYS" | "INTERNAL_API_KEY"> {
   GITHUB_PRIVATE_KEY: string;
   GITHUB_PRIVATE_KEY_PEM: string;
+  INTERNAL_API_KEY: string;
+  INTERNAL_API_KEYS: string[];
 }
 
 export function normalizePrivateKey(value: string) {
   return value.replace(/\\n/g, "\n").trim();
+}
+
+function parseInternalApiKeys(parsed: ParsedEnv) {
+  const rawValues = [parsed.INTERNAL_API_KEY, parsed.INTERNAL_API_KEYS]
+    .filter((value): value is string => Boolean(value))
+    .flatMap((value) => value.split(","))
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  const keys = [...new Set(rawValues)];
+
+  if (!keys.length) {
+    throw new z.ZodError([
+      {
+        code: z.ZodIssueCode.custom,
+        path: ["INTERNAL_API_KEY"],
+        message: "INTERNAL_API_KEY or INTERNAL_API_KEYS is required",
+      },
+    ]);
+  }
+
+  return keys;
 }
 
 export function parseEnv(input: NodeJS.ProcessEnv): AppEnv {
@@ -43,11 +68,14 @@ export function parseEnv(input: NodeJS.ProcessEnv): AppEnv {
   }
 
   const normalizedKey = normalizePrivateKey(privateKey);
+  const internalApiKeys = parseInternalApiKeys(parsed);
 
   return {
     ...parsed,
     GITHUB_PRIVATE_KEY: normalizedKey,
     GITHUB_PRIVATE_KEY_PEM: normalizedKey,
+    INTERNAL_API_KEY: internalApiKeys.join(","),
+    INTERNAL_API_KEYS: internalApiKeys,
   };
 }
 
