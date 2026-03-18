@@ -57,7 +57,7 @@ export class TrustSignalVerificationClient {
           headers: {
             "content-type": "application/json",
             "accept": "application/json",
-            authorization: `Bearer ${this.apiKey}`,
+            "x-api-key": this.apiKey,
           },
           body: payloadText,
           signal: controller.signal,
