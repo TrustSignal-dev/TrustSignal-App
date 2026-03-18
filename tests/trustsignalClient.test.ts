@@ -55,7 +55,7 @@ describe("TrustSignalVerificationClient", () => {
       expect.objectContaining({
         method: "POST",
         headers: expect.objectContaining({
-          authorization: "Bearer secret",
+          "x-api-key": "secret",
           "accept": "application/json",
         }),
       })
@@ -136,7 +136,7 @@ describe("TrustSignalVerificationClient", () => {
       expect.objectContaining({
         method: "POST",
         headers: expect.objectContaining({
-          authorization: "Bearer secret",
+          "x-api-key": "secret",
         }),
       })
     );
@@ -146,7 +146,7 @@ describe("TrustSignalVerificationClient", () => {
       expect.objectContaining({
         method: "POST",
         headers: expect.objectContaining({
-          authorization: "Bearer secret",
+          "x-api-key": "secret",
         }),
       })
     );

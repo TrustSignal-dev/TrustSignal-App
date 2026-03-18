@@ -99,7 +99,7 @@ jobs:
           TRUSTSIGNAL_API_KEY: ${{ secrets.TRUSTSIGNAL_API_KEY }}
         run: |
           curl -fsSL \
-            -H "Authorization: Bearer ${TRUSTSIGNAL_API_KEY}" \
+            -H "x-api-key: ${TRUSTSIGNAL_API_KEY}" \
             -H "Content-Type: application/json" \
             -d '{
               "repository": "'"${GITHUB_REPOSITORY}"'",
