@@ -8,7 +8,17 @@
 
 
 
-Production-ready GitHub App backend for webhook intake, TrustSignal verification orchestration, and check-run publishing. Also includes a GitHub Action runtime that submits the same verification contract to the TrustSignal API.
+> Status: `active`
+>
+> Canonical role: GitHub App backend for webhook intake and GitHub check publishing.
+>
+> This repo is not the canonical public frontend, not the primary public API, and not the canonical source of the GitHub Action.
+
+## Source of Truth
+
+Canonical repo roles and ownership are defined in [TrustSignal/docs/REPO_ROLES.md](https://github.com/TrustSignal-dev/TrustSignal/blob/master/docs/REPO_ROLES.md).
+
+GitHub App backend for webhook intake, TrustSignal verification orchestration, and check-run publishing. It also contains a bundled action runtime used by this integration surface, but the canonical public action source lives in `TrustSignal/github-actions/trustsignal-verify-artifact`.
 
 
 
@@ -268,6 +278,8 @@ npm run build
 
 ## GitHub Action
 
+For external workflows, use the canonical monorepo action in `TrustSignal/github-actions/trustsignal-verify-artifact`, pinned to a maintainer-published release tag or commit SHA.
+
 
 
 The bundled Action submits the same verification contract used by the App backend.
@@ -282,7 +294,7 @@ The bundled Action submits the same verification contract used by the App backen
 
 steps:
 
-  - uses: TrustSignal-dev/TrustSignal-App/apps/action@v0.1.0
+  - uses: ./apps/action
 
     id: trustsignal
 
@@ -362,7 +374,6 @@ The Action does not require the webhook backend to be deployed — it only needs
 
 | [TrustSignal](https://github.com/TrustSignal-dev/TrustSignal) | Core API and verification engine |
 
-| [TrustSignal-Verify-Artifact](https://github.com/TrustSignal-dev/TrustSignal-Verify-Artifact) | Standalone GitHub Action for artifact verification |
+| [TrustSignal GitHub Action](https://github.com/TrustSignal-dev/TrustSignal/tree/master/github-actions/trustsignal-verify-artifact) | Canonical GitHub Action source in the monorepo. Confirm the published ref before documenting a stable version alias. |
 
 | [v0-signal-new](https://github.com/TrustSignal-dev/v0-signal-new) | Public website — trustsignal.dev |
-

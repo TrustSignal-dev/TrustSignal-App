@@ -1,5 +1,5 @@
-name: TrustSignal Verification
-description: Submit GitHub workflow provenance to the TrustSignal verification API.
+name: TrustSignal App Runtime Verification
+description: Bundled action runtime for the TrustSignal GitHub App repository. The canonical public action lives in TrustSignal/github-actions/trustsignal-verify-artifact.
 inputs:
   trustsignal-api-base-url:
     description: Base URL for the TrustSignal verification API.

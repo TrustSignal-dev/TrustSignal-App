@@ -19,7 +19,7 @@ The GitHub Action runtime is not a hosted backend. GitHub executes it inside an 
 
 ## Deployment Model
 
-Preferred production split:
+Preferred deployment split:
 
 - `trustsignal.dev`: main website
 - `api.trustsignal.dev`: public verification API
@@ -27,7 +27,7 @@ Preferred production split:
 
 This keeps the website, outbound verification API, and inbound webhook receiver operationally independent.
 
-### Runtime Inventory (Current Production)
+### Runtime Inventory (Expected Deployment)
 
 | Domain | Vercel Project | Purpose | Runtime Separation Status |
 | --- | --- | --- | --- |
